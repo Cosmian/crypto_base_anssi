@@ -33,7 +33,9 @@ pub enum CryptoCoreError {
     #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
     Pkcs8Error(String),
     #[cfg(feature = "ser")]
-    ReadLeb128Error(leb128::read::Error),
+    ReadLeb128UnsignedError(leb128::read::Error),
+    #[cfg(feature = "ser")]
+    ReadLeb128SignedError(leb128::read::Error),
     #[cfg(feature = "rsa")]
     RsaError(String),
     SerializationIoError {
@@ -43,8 +45,12 @@ pub enum CryptoCoreError {
     SignatureError(String),
     StreamCipherError(String),
     TryFromSliceError(TryFromSliceError),
-    WriteLeb128Error {
+    WriteLeb128UnsignedError {
         value: u64,
+        error: std::io::Error,
+    },
+    WriteLeb128SignedError {
+        value: i64,
         error: std::io::Error,
     },
 }
@@ -102,7 +108,13 @@ impl Display for CryptoCoreError {
             #[cfg(any(feature = "certificate", feature = "nist_curves", feature = "rsa"))]
             CryptoCoreError::Pkcs8Error(err) => write!(f, "when converting to PKCS8, {err}"),
             #[cfg(feature = "ser")]
-            CryptoCoreError::ReadLeb128Error(err) => write!(f, "when reading LEB128, {err}"),
+            CryptoCoreError::ReadLeb128UnsignedError(err) => {
+                write!(f, "cannot read unsigned value from LEB128, {err}")
+            }
+            #[cfg(feature = "ser")]
+            CryptoCoreError::ReadLeb128SignedError(err) => {
+                write!(f, "cannot read signed value from LEB128, {err}")
+            }
             #[cfg(feature = "rsa")]
             CryptoCoreError::RsaError(e) => write!(f, "RSA error: {e}"),
             CryptoCoreError::SerializationIoError { bytes_len, error } => {
@@ -111,7 +123,10 @@ impl Display for CryptoCoreError {
             CryptoCoreError::SignatureError(e) => write!(f, "error during signature: {e}"),
             CryptoCoreError::StreamCipherError(e) => write!(f, "stream cipher error: {e}"),
             CryptoCoreError::TryFromSliceError(e) => write!(f, "try from slice error: {e}"),
-            CryptoCoreError::WriteLeb128Error { value, error } => {
+            Self::WriteLeb128UnsignedError { value, error } => {
+                write!(f, "when writing {value} as LEB128 size, IO error {error}")
+            }
+            Self::WriteLeb128SignedError { value, error } => {
                 write!(f, "when writing {value} as LEB128 size, IO error {error}")
             }
         }

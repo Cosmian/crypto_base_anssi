@@ -64,9 +64,14 @@ impl<'a> Deserializer<'a> {
         Deserializer { readable: bytes }
     }
 
+    /// Reads a `i64` from the `Deserializer`.
+    pub fn read_leb128_i64(&mut self) -> Result<i64, CryptoCoreError> {
+        leb128::read::signed(&mut self.readable).map_err(CryptoCoreError::ReadLeb128SignedError)
+    }
+
     /// Reads a `u64` from the `Deserializer`.
     pub fn read_leb128_u64(&mut self) -> Result<u64, CryptoCoreError> {
-        leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128Error)
+        leb128::read::unsigned(&mut self.readable).map_err(CryptoCoreError::ReadLeb128UnsignedError)
     }
 
     /// Reads an array of bytes of length `LENGTH` from the `Deserializer`.
@@ -156,12 +161,20 @@ impl Serializer {
         Self(Zeroizing::new(Vec::with_capacity(capacity)))
     }
 
+    /// Writes a `i64` to the `Serializer`.
+    ///
+    /// - `x`   : `i64` to write
+    pub fn write_leb128_i64(&mut self, x: i64) -> Result<usize, CryptoCoreError> {
+        leb128::write::signed(&mut *self.0, x)
+            .map_err(|error| CryptoCoreError::WriteLeb128SignedError { value: x, error })
+    }
+
     /// Writes a `u64` to the `Serializer`.
     ///
     /// - `n`   : `u64` to write
     pub fn write_leb128_u64(&mut self, n: u64) -> Result<usize, CryptoCoreError> {
         leb128::write::unsigned(&mut *self.0, n)
-            .map_err(|error| CryptoCoreError::WriteLeb128Error { value: n, error })
+            .map_err(|error| CryptoCoreError::WriteLeb128UnsignedError { value: n, error })
     }
 
     /// Writes an array of bytes to the `Serializer`.
