@@ -64,6 +64,12 @@ impl Serializable for R25519PrivateKey {
     }
 }
 
+test_serialization!(
+    R25519PrivateKey,
+    test_r25519_private_key_serialization,
+    R25519PrivateKey::try_from_bytes([0; R25519_PRIVATE_KEY_LENGTH]).unwrap()
+);
+
 /// Facades
 ///
 /// Facades are used to hide the underlying types and provide a more

@@ -1,12 +1,14 @@
 //! This crate implements crypto primitives which are used in many other
 //! Cosmian cryptographic resources.
 
+#[macro_use]
+#[cfg(feature = "ser")]
+pub mod bytes_ser_de;
+
 #[cfg(any(feature = "curve25519", feature = "nist_curves"))]
 mod asymmetric_crypto;
 #[cfg(feature = "blake")]
 pub mod blake2;
-#[cfg(feature = "ser")]
-pub mod bytes_ser_de;
 #[cfg(feature = "ecies")]
 mod ecies;
 #[cfg(feature = "sha3")]

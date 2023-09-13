@@ -255,6 +255,30 @@ pub fn to_leb128_len(n: usize) -> usize {
     size
 }
 
+/// Check the given value of the given type can be serialized and deserialized
+/// correctly and that its serialized length is correctly computed.
+#[macro_export]
+macro_rules! test_serialization {
+    ($type:ty, $func_name:ident, $value:expr) => {
+        #[test]
+        fn $func_name() {
+            let var = $value;
+            let serialized_var =
+                <$type as $crate::bytes_ser_de::Serializable>::serialize(&var).unwrap();
+
+            assert_eq!(
+                <$type as $crate::bytes_ser_de::Serializable>::length(&var),
+                serialized_var.len()
+            );
+
+            let res = <$type as $crate::bytes_ser_de::Serializable>::deserialize(&serialized_var)
+                .unwrap();
+
+            assert_eq!(var, res);
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::{to_leb128_len, Deserializer, Serializable, Serializer};
