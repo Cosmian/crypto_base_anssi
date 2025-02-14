@@ -20,6 +20,9 @@ pub type P256PrivateKey = private_key::NistPrivateKey<NistP256, P256_PRIVATE_KEY
 pub const P256_PUBLIC_KEY_LENGTH: usize = 33;
 pub type P256PublicKey = public_key::NistPublicKey<NistP256, P256_PUBLIC_KEY_LENGTH>;
 
+#[cfg(feature = "hazmat")]
+pub type P256CurvePoint = curve_point::NistCurvePoint<NistP256>;
+
 pub const P224_PRIVATE_KEY_LENGTH: usize = 28;
 pub type P224PrivateKey = private_key::NistPrivateKey<NistP224, P224_PRIVATE_KEY_LENGTH>;
 pub const P224_PUBLIC_KEY_LENGTH: usize = 29;
