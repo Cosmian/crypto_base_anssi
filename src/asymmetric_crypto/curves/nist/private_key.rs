@@ -1,10 +1,14 @@
-use std::hash::Hash;
+use std::{
+    hash::Hash,
+    ops::{Add, Div, Mul, Sub},
+};
 
 #[cfg(feature = "aes")]
 use aead::generic_array::GenericArray;
 use elliptic_curve::{
+    ops::Invert,
     sec1::{self},
-    Curve, CurveArithmetic, SecretKey,
+    Curve, CurveArithmetic, PrimeCurve, SecretKey,
 };
 use pkcs8::{
     pkcs5::{pbes2, scrypt},
@@ -294,5 +298,73 @@ where
         let mut bytes = [0_u8; LENGTH];
         bytes.copy_from_slice(&secret_key.to_bytes());
         Ok(Self { bytes, secret_key })
+    }
+}
+
+impl<C: Curve + CurveArithmetic, const LENGTH: usize> Add<&NistPrivateKey<C, LENGTH>>
+    for &NistPrivateKey<C, LENGTH>
+{
+    type Output = NistPrivateKey<C, LENGTH>;
+
+    fn add(self, rhs: &NistPrivateKey<C, LENGTH>) -> Self::Output {
+        let secret_key = SecretKey::new(
+            self.secret_key
+                .as_scalar_primitive()
+                .add(rhs.secret_key.as_scalar_primitive()),
+        );
+        let mut bytes = [0_u8; LENGTH];
+        bytes.copy_from_slice(&secret_key.to_bytes());
+        NistPrivateKey { bytes, secret_key }
+    }
+}
+
+impl<C: Curve + CurveArithmetic, const LENGTH: usize> Sub<&NistPrivateKey<C, LENGTH>>
+    for &NistPrivateKey<C, LENGTH>
+{
+    type Output = NistPrivateKey<C, LENGTH>;
+
+    fn sub(self, rhs: &NistPrivateKey<C, LENGTH>) -> Self::Output {
+        let secret_key = SecretKey::new(
+            self.secret_key
+                .as_scalar_primitive()
+                .sub(rhs.secret_key.as_scalar_primitive()),
+        );
+        let mut bytes = [0_u8; LENGTH];
+        bytes.copy_from_slice(&secret_key.to_bytes());
+        NistPrivateKey { bytes, secret_key }
+    }
+}
+
+impl<C: PrimeCurve + CurveArithmetic, const LENGTH: usize> Mul<&NistPrivateKey<C, LENGTH>>
+    for &NistPrivateKey<C, LENGTH>
+{
+    type Output = NistPrivateKey<C, LENGTH>;
+
+    fn mul(self, rhs: &NistPrivateKey<C, LENGTH>) -> Self::Output {
+        let secret_key = SecretKey::from(
+            self.secret_key.to_nonzero_scalar() * rhs.secret_key.to_nonzero_scalar(),
+        );
+
+        let mut bytes = [0_u8; LENGTH];
+        bytes.copy_from_slice(&secret_key.to_bytes());
+        NistPrivateKey { bytes, secret_key }
+    }
+}
+
+impl<C: PrimeCurve + CurveArithmetic, const LENGTH: usize> Div<&NistPrivateKey<C, LENGTH>>
+    for &NistPrivateKey<C, LENGTH>
+{
+    type Output = NistPrivateKey<C, LENGTH>;
+
+    // Division is equivalent to multiplication by the inverse.
+    #[allow(clippy::suspicious_arithmetic_impl)]
+    fn div(self, rhs: &NistPrivateKey<C, LENGTH>) -> Self::Output {
+        let secret_key = SecretKey::from(
+            self.secret_key.to_nonzero_scalar() * rhs.secret_key.to_nonzero_scalar().invert(),
+        );
+
+        let mut bytes = [0_u8; LENGTH];
+        bytes.copy_from_slice(&secret_key.to_bytes());
+        NistPrivateKey { bytes, secret_key }
     }
 }
